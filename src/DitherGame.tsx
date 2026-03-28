@@ -426,24 +426,37 @@ export default function DitherGame() {
 
     const onPointerMove = (e: PointerEvent) => {
       const st = stateRef.current;
-      if (!st || e.pointerType !== "mouse") return;
+      if (!st) return;
       const { x, y } = getLocalPos(e);
       st.mouseX = x;
       st.mouseY = y;
-      st.mouseActive = true;
+      // Mouse always sets active on move; touch is managed by down/up
+      if (e.pointerType === "mouse") {
+        st.mouseActive = true;
+      }
       if (!raf) raf = requestAnimationFrame(tick);
     };
 
     const onPointerLeave = (e: PointerEvent) => {
       const st = stateRef.current;
-      if (st && e.pointerType === "mouse") {
+      if (st) {
         st.mouseActive = false;
         if (!raf) raf = requestAnimationFrame(tick);
       }
     };
 
     const onPointerDown = (e: PointerEvent) => {
+      const st = stateRef.current;
       const game = gameRef.current;
+
+      // Touch: activate tracking and update position on finger down
+      if (e.pointerType === "touch" && st) {
+        const { x, y } = getLocalPos(e);
+        st.mouseX = x;
+        st.mouseY = y;
+        st.mouseActive = true;
+      }
+
       if (game.phase === "playing") {
         game.charging = true;
         game.chargeStart = performance.now();
@@ -458,6 +471,11 @@ export default function DitherGame() {
       if (!st) return;
       const game = gameRef.current;
       const { x, y } = getLocalPos(e);
+
+      // Touch: deactivate tracking on finger lift (pause, like mouse leaving)
+      if (e.pointerType === "touch") {
+        st.mouseActive = false;
+      }
 
       if (game.phase === "menu" && freshClickRef.current) {
         freshClickRef.current = false;
