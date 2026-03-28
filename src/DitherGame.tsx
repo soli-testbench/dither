@@ -74,6 +74,7 @@ export default function DitherGame() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const stateRef = useRef<RenderState | null>(null);
   const gameRef = useRef<GameState>(createGameState());
+  const freshClickRef = useRef(false);
 
   const [uiState, setUiState] = useState<{
     phase: GamePhase;
@@ -446,6 +447,8 @@ export default function DitherGame() {
       if (game.phase === "playing") {
         game.charging = true;
         game.chargeStart = performance.now();
+      } else if (game.phase === "menu" || game.phase === "gameover") {
+        freshClickRef.current = true;
       }
       if (!raf) raf = requestAnimationFrame(tick);
     };
@@ -456,7 +459,8 @@ export default function DitherGame() {
       const game = gameRef.current;
       const { x, y } = getLocalPos(e);
 
-      if (game.phase === "menu") {
+      if (game.phase === "menu" && freshClickRef.current) {
+        freshClickRef.current = false;
         gameRef.current = createGameState();
         gameRef.current.phase = "playing";
         setUiState((prev) => ({
@@ -480,7 +484,8 @@ export default function DitherGame() {
         }
         game.charging = false;
         game.chargeStart = 0;
-      } else if (game.phase === "gameover") {
+      } else if (game.phase === "gameover" && freshClickRef.current) {
+        freshClickRef.current = false;
         gameRef.current = createGameState();
         gameRef.current.phase = "playing";
         setUiState((prev) => ({
